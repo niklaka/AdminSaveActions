@@ -214,11 +214,14 @@ class AfterSaveActions extends WireData implements Module {
 	 *
 	 */
 	public function hookSessionRedirect(HookEvent $event) {
-		// try to match the regex from the settings ($m[1] will hold the id on success)
-		if(preg_match($this->currentProcess['regexp'], $event->arguments[0], $m)) {
+		// action will be validated using a switch-case
+		$action = $this->input->post->afterSaveAction;
 
-			// action will be validated using a switch-case
-			$action = $this->input->post->afterSaveAction;
+		// try to match the regex from the settings ($m[1] will hold the id on success)
+		if($action && preg_match($this->currentProcess['regexp'], $event->arguments[0], $m)) {
+
+			// take the id
+			$id = $m[1];
 
 			// base url for action
 			$base = $this->config->urls->admin;
@@ -227,7 +230,7 @@ class AfterSaveActions extends WireData implements Module {
 			$base = $base . $this->currentProcess['type'] . '/';
 
 			// saved target: page, field or template
-			$savedTarget = $this->pages->get($m[1]);
+			$savedTarget = $this->pages->get($id);
 			switch($action) {
 				case 'list':
 					// go to the page list, opened to show the edited page
@@ -250,7 +253,9 @@ class AfterSaveActions extends WireData implements Module {
 					$this->message($this->_('This page is not viewable - could not execute chosen after save action.'));
 				case 'edit':
 					// this is the default (and original) behaviour, stay in the editor
-					$url = $base . "edit?id={$id}";
+					// ProcessPage(Edit|Add) needs the slash while Process(Template|Field) can't stand it
+					if($this->currentProcess['type'] == 'page') $url = $base . "edit/?id={$id}";
+					else $url = $base . "edit?id={$id}";
 					break;
 				default:
 					throw new WireException($this->_('Invalid action: ') . $action);
