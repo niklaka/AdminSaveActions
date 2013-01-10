@@ -37,7 +37,7 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 		return array(
 			'title'    => 'After Save Actions',
 			'summary'  => 'Lets the user choose from alternatives what happens after a page/field/template add/save.',
-			'version'  => 005,
+			'version'  => 006,
 			'author'   => 'Niklas Lakanen',
 			'singular' => true,
 			'autoload' => true
