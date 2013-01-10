@@ -22,10 +22,8 @@ Chosen action can be saved in a cookie for current user by checking "Remember th
 * Return to list
 * Create a new field
 
-
-
-## Roadmap / ToDo ##
-* Config option: display actions in a drop down near the bottom Save button instead of a separate container.
+### Config option(s) ###
+* Config option: input type (display actions in a container with radio buttons OR a drop down near the bottom Save button)
 
 ------
 AfterSaveActions Copyright (c) 2013 Niklas Lakanen

@@ -9,7 +9,7 @@
  *
  */
 
-class AfterSaveActions extends WireData implements Module {
+class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 
 	/**
 	 * @var string Chosen action
@@ -41,6 +41,16 @@ class AfterSaveActions extends WireData implements Module {
 			'author'   => 'Niklas Lakanen',
 			'singular' => true,
 			'autoload' => true
+		);
+	}
+
+	/**
+	 * Default configuration
+	 *
+	 */
+	static public function getDefaultConfig() {
+		return array(
+			'configInputType' => 'radios'
 		);
 	}
 
@@ -86,6 +96,16 @@ class AfterSaveActions extends WireData implements Module {
 	}
 
 	/**
+	 * Populate default configuration (will be overwritten after constructor with user's own configuration)
+	 *
+	 */
+	public function __construct() {
+		foreach(self::getDefaultConfig() as $key => $value) {
+			$this->$key = $value;
+		}
+	}
+
+	/**
 	 * init() is called when PW's API is ready
 	 *
 	 */
@@ -111,6 +131,9 @@ class AfterSaveActions extends WireData implements Module {
 
 		// don't do a thing if template has just been changed
 		if($this->page->process == 'ProcessPageEdit' && $this->input->get->template) return;
+		
+		// don't do a thing if we're editing a field from inside a template
+		if($this->input->get->process_template && $this->input->get->modal) return;
 
 		// after save: hook Session::redirect()
 		if($this->input->post->afterSaveAction || $this->input->post->submit_save_field) {
@@ -142,21 +165,36 @@ class AfterSaveActions extends WireData implements Module {
 			if($target) break;
 		}
 
-		// if a suitable target was found, add some radios
+		// if a suitable target was found, add one type of selection
 		if($target) {
-			$f = new InputfieldRadios();
-			$f->attr('id+name', 'afterSaveAction');
-			$f->label = $this->_('After save...');
-			$f->collapsed = Inputfield::collapsedYes;
-
-			$f->addOptions($this->getActions());
-
-			$f->value = $this->afterSaveAction;
-
-			$form->insertBefore($f, $target);
-
-			// hook the render function to add a checkbox inside the container
-			$f->addHook('render', $this, 'hookAfterSaveActionRender');
+			switch($this->configInputType) {
+				case 'radios':
+					// use radio buttons in a container
+					$f = new InputfieldRadios();
+					$f->attr('id+name', 'afterSaveAction');
+					$f->label = $this->_('After save...');
+					$f->collapsed = Inputfield::collapsedYes;
+		
+					$f->addOptions($this->getActions());
+		
+					$f->value = $this->afterSaveAction;
+		
+					$form->insertBefore($f, $target);
+		
+					// hook the render() function to add a checkbox inside the container
+					$f->addHook('render', $this, 'hookAfterSaveActionRender');
+					break;
+				
+				case 'dropdown':
+					// use dropdown with the bottom Save button
+					
+					// change the target to the very last button if there's both publish and save unpublished available
+					if($this->currentProcess['type'] == 'page' && $saveButton = $form->get('submit_save')) $target = $saveButton;
+					
+					// hook the submit button's render() function to add the dd + cb after it
+					$target->addHook('render', $this, 'hookSubmitRender');
+					break;
+			}
 		}
 	}
 
@@ -203,7 +241,36 @@ class AfterSaveActions extends WireData implements Module {
 	 *
 	 */
 	public function hookAfterSaveActionRender (HookEvent $event) {
-		$event->return = $event->return . '<label><input type="checkbox" name="afterSaveActionRemember" /> ' . $this->_('Remember this setting') . '</label>';
+		$event->return = $event->return . $this->renderRememberCheckbox();
+	}
+
+	/**
+	 * Hook to add a drop down where to choose an after save action from
+	 *
+	 * @param HookEvent $event Event object where the return value has markup from submit buttons render() function
+	 *
+	 */
+	public function hookSubmitRender (HookEvent $event) {
+		$options = '';
+		foreach($this->getActions() as $val => $label) {
+			$options .= '<option value="' . $val . '"' . ($this->afterSaveAction == $val ? 'selected="selected"':'') . '>' . $label . '</option>';
+		}
+		$event->return =
+			$event->return .
+			' + <select name="afterSaveAction">' .
+			$options .
+			'</select>' .
+			$this->renderRememberCheckbox();
+	}
+	
+	/**
+	 * Render a "Remember this setting" checkbox
+	 *
+	 * @return string Markup for the checkbox
+	 * 
+	 */
+	private function renderRememberCheckbox() {
+		return '<label><input type="checkbox" name="afterSaveActionRemember" /> ' . $this->_('Remember this setting') . '</label>';
 	}
 
 	/**
@@ -272,4 +339,33 @@ class AfterSaveActions extends WireData implements Module {
 			$event->arguments = array($url);
 		}
 	}
+	
+	/**
+	 * Return an InputfieldsWrapper of Inputfields used to configure the class
+	 *
+	 * @param array $data Array of config values indexed by field name
+	 * @return InputfieldsWrapper
+	 *
+	 */
+	public static function getModuleConfigInputfields(array $data) {
+		$wrapper = new InputFieldWrapper();
+		foreach(self::getDefaultConfig() as $key => $value) {
+			if(!isset($data[$key])) $data[$key] = $value;
+		}
+
+		$f = new InputfieldRadios();
+		$f->attr('id+name', 'configInputType');
+		$f->label = __('Input type', __FILE__);
+		$f->description = __('Choose the type of input to use for choosing actions.', __FILE__);
+
+		$f->addOption("radios",   __('Radio buttons in a collapsed container', __FILE__));
+		$f->addOption("dropdown", __('Dropdown after the Save button', __FILE__));
+
+		$f->value = $data['configInputType'];
+
+		$wrapper->add($f);
+
+		return $wrapper;
+	}
+
 }
