@@ -23,7 +23,7 @@ Chosen action can be saved in a cookie for current user by checking "Remember th
 * Create a new field
 
 ### Config option(s) ###
-* Input type: display actions in a container with radio buttons OR a drop down near the bottom Save button.
+* (Experimental) Input type: display actions in a container with radio buttons OR a drop down near the bottom Save button.
 
 ------
 AfterSaveActions Copyright (c) 2013 Niklas Lakanen
