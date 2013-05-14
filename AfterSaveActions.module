@@ -37,7 +37,7 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 		return array(
 			'title'    => 'After Save Actions',
 			'summary'  => 'Lets the user choose from alternatives what happens after a page/field/template add/save.',
-			'version'  => 006,
+			'version'  => 007,
 			'author'   => 'Niklas Lakanen',
 			'singular' => true,
 			'autoload' => true
@@ -72,7 +72,8 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 				// first, try to find a 'publish' button (case: unpublished page)
 				// if there was no luck, try to find a 'save' button (case: published page)
 				'targetButtonIds' => array('submit_publish', 'submit_save'),
-				'regexp'          => '|^\./\?id=(\d+)$|'
+				// 2.3 core has '&s=1' after the id
+				'regexp'          => '|^\./\?id=(\d+)(?:&s=1)?$|'
 			),
 			'ProcessPageAdd' => array(
 				'type'            => 'page',
@@ -84,7 +85,8 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 				'type'            => 'field',
 				'buildFormMethod' => 'ProcessField::buildEditForm',
 				'targetButtonIds' => array('submit_save_field'),
-				'regexp'          => '|^edit\?id=(\d+)$|'
+				// allow when saving context dependent settings as well (fieldgroup=<nn>)
+				'regexp'          => '|^edit\?id=(\d+)(?:&fieldgroup_id=\d+)?$|'
 			),
 			'ProcessTemplate' => array(
 				'type'            => 'template',
