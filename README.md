@@ -4,7 +4,7 @@ After Save Actions adds the possibility to choose where the browser gets redirec
 
 Chosen action can be saved in a cookie for current user by checking "Remember this setting". By leaving this option unchecked upon save, the chosen action will not become the default.
 
-## Actions available in v0.0.5 ##
+## Actions available in v0.0.7 ##
 
 ### When saving / adding pages ###
 * Continue editing
