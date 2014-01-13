@@ -1,21 +1,21 @@
 <?php
 
 /**
- * ProcessWire AfterSaveActions
+ * ProcessWire AdminSaveActions
  *
- * After Save Actions adds possibility to choose where the browser gets redirected after a save action (Page | Template | Field).
+ * Admin Save Actions adds possibility to choose where the browser gets redirected after a save action (Page | Template | Field).
  *
  * @copyright Copyright (c) 2013, Niklas Lakanen
  *
  */
 
-class AfterSaveActions extends WireData implements Module, ConfigurableModule {
+class AdminSaveActions extends WireData implements Module, ConfigurableModule {
 
 	/**
 	 * @var string Chosen action
 	 *
 	 */
-	private $afterSaveAction;
+	private $adminSaveAction;
 	/**
 	 * @var string Name of the cookie used to save chosen action
 	 *
@@ -35,9 +35,9 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 	 */
 	static public function getModuleInfo() {
 		return array(
-			'title'    => 'After Save Actions',
+			'title'    => 'Admin Save Actions',
 			'summary'  => 'Lets the user choose from alternatives what happens after a page/field/template add/save.',
-			'version'  => 007,
+			'version'  => 100,
 			'author'   => 'Niklas Lakanen',
 			'singular' => true,
 			'autoload' => true
@@ -113,11 +113,11 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 	 */
 	public function init() {
 		// cookie per user (TODO: possibly add a context part to the cookie name [page|field|template])
-		$this->cookieName = $this->user->id . "-afterSaveAction";
+		$this->cookieName = $this->user->id . "-adminSaveAction";
 
 		// action from the cookie, default to original behaviour (edit)
-		$this->afterSaveAction = $this->input->cookie[$this->cookieName];
-		if(!$this->afterSaveAction) $this->afterSaveAction = 'edit';
+		$this->adminSaveAction = $this->input->cookie[$this->cookieName];
+		if(!$this->adminSaveAction) $this->adminSaveAction = 'edit';
 	}
 
 	/**
@@ -138,7 +138,7 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 		if($this->input->get->process_template && $this->input->get->modal) return;
 
 		// after save: hook Session::redirect()
-		if($this->input->post->afterSaveAction || $this->input->post->submit_save_field) {
+		if($this->input->post->adminSaveAction || $this->input->post->submit_save_field) {
 			$this->session->addHookBefore('redirect', $this, 'hookSessionRedirect');
 
 		// showing an edit form: hook <process>::build(Edit)Form
@@ -173,18 +173,18 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 				case 'radios':
 					// use radio buttons in a container
 					$f = new InputfieldRadios();
-					$f->attr('id+name', 'afterSaveAction');
+					$f->attr('id+name', 'adminSaveAction');
 					$f->label = $this->_('After save...');
 					$f->collapsed = Inputfield::collapsedYes;
 		
 					$f->addOptions($this->getActions());
 		
-					$f->value = $this->afterSaveAction;
+					$f->value = $this->adminSaveAction;
 		
 					$form->insertBefore($f, $target);
 		
 					// hook the render() function to add a checkbox inside the container
-					$f->addHook('render', $this, 'hookAfterSaveActionRender');
+					$f->addHook('render', $this, 'hookAdminSaveActionRender');
 					break;
 				
 				case 'dropdown':
@@ -219,7 +219,7 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 				// when editing the root page, don't add 'new sibling' option
 				if($this->input->get->id == 1) {
 					// and use the default action once again, if 'new' is the save action
-					if($this->afterSaveAction == 'new') $this->afterSaveAction = 'edit';
+					if($this->adminSaveAction == 'new') $this->adminSaveAction = 'edit';
 				} else {
 					$actions['new'] = $this->_('Create a new sibling page');
 				}
@@ -242,7 +242,7 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 	 * @param HookEvent $event Event object: this is where the return value resides after the render function itself
 	 *
 	 */
-	public function hookAfterSaveActionRender (HookEvent $event) {
+	public function hookAdminSaveActionRender (HookEvent $event) {
 		$event->return = $event->return . $this->renderRememberCheckbox();
 	}
 
@@ -255,11 +255,11 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 	public function hookSubmitRender (HookEvent $event) {
 		$options = '';
 		foreach($this->getActions() as $val => $label) {
-			$options .= '<option value="' . $val . '"' . ($this->afterSaveAction == $val ? 'selected="selected"':'') . '>' . $label . '</option>';
+			$options .= '<option value="' . $val . '"' . ($this->adminSaveAction == $val ? 'selected="selected"':'') . '>' . $label . '</option>';
 		}
 		$event->return =
 			$event->return .
-			' + <select name="afterSaveAction">' .
+			' + <select name="adminSaveAction">' .
 			$options .
 			'</select>' .
 			$this->renderRememberCheckbox();
@@ -272,7 +272,7 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 	 * 
 	 */
 	private function renderRememberCheckbox() {
-		return '<label><input type="checkbox" name="afterSaveActionRemember" /> ' . $this->_('Remember this setting') . '</label>';
+		return '<label><input type="checkbox" name="adminSaveActionRemember" /> ' . $this->_('Remember this setting') . '</label>';
 	}
 
 	/**
@@ -284,7 +284,7 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 	 */
 	public function hookSessionRedirect(HookEvent $event) {
 		// action will be validated using a switch-case
-		$action = $this->input->post->afterSaveAction;
+		$action = $this->input->post->adminSaveAction;
 
 		// try to match the regex from the settings ($m[1] will hold the id on success)
 		if($action && preg_match($this->currentProcess['regexp'], $event->arguments[0], $m)) {
@@ -319,7 +319,7 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 					// if the page was't viewable, fall back to the original behaviour (case edit)
 					// so no 'break' here intentionally!
 					// a message to the user though
-					$this->message($this->_('This page is not viewable - could not execute chosen after save action.'));
+					$this->message($this->_('This page is not viewable - could not execute chosen action.'));
 				case 'edit':
 					// this is the default (and original) behaviour, stay in the editor
 					// ProcessPage(Edit|Add) needs the slash while Process(Template|Field) can't stand it
@@ -335,7 +335,7 @@ class AfterSaveActions extends WireData implements Module, ConfigurableModule {
 			if($this->input->get->modal) $url .= "&modal=1";
 
 			// save the action if requested
-			if($this->input->post->afterSaveActionRemember) setcookie($this->cookieName, $action, 0, '/');
+			if($this->input->post->adminSaveActionRemember) setcookie($this->cookieName, $action, 0, '/');
 
 			// replace Session::redirect arguments with the one generated here
 			$event->arguments = array($url);
