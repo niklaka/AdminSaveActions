@@ -5,7 +5,7 @@
  *
  * Admin Save Actions adds possibility to choose where the browser gets redirected after a save action (Page | Template | Field).
  *
- * @copyright Copyright (c) 2013, Niklas Lakanen
+ * @copyright Copyright (c) 2013-2014, Niklas Lakanen
  *
  */
 
@@ -113,12 +113,6 @@ class AdminSaveActions extends WireData implements Module, ConfigurableModule {
 	 *
 	 */
 	public function init() {
-		// cookie per user (TODO: possibly add a context part to the cookie name [page|field|template])
-		$this->cookieName = $this->user->id . "-adminSaveAction";
-
-		// action from the cookie, default to original behaviour (edit)
-		$this->adminSaveAction = $this->input->cookie[$this->cookieName];
-		if(!$this->adminSaveAction) $this->adminSaveAction = 'edit';
 	}
 
 	/**
@@ -137,6 +131,16 @@ class AdminSaveActions extends WireData implements Module, ConfigurableModule {
 		
 		// don't do a thing if we're editing a field from inside a template
 		if($this->input->get->process_template && $this->input->get->modal) return;
+
+		// we're about to really do something so let's initialize some more
+
+		// cookie per user and per context
+		$this->cookieName = $this->user->id . "-adminSaveAction-" . $this->currentProcess['type'];
+
+		// action from the cookie, default to original behaviour (edit)
+		$this->adminSaveAction = $this->input->cookie[$this->cookieName];
+		if(!$this->adminSaveAction) $this->adminSaveAction = 'edit';
+
 
 		// after save: hook Session::redirect()
 		if($this->input->post->adminSaveAction || $this->input->post->submit_save_field) {
@@ -331,7 +335,7 @@ class AdminSaveActions extends WireData implements Module, ConfigurableModule {
 						$url = $savedTarget->url;
 						break;
 					}
-					// if the page was't viewable, fall back to the original behaviour (case edit)
+					// if the page wasn't viewable, fall back to the original behaviour (case edit)
 					// so no 'break' here intentionally!
 					// a message to the user though
 					$this->message($this->_('This page is not viewable - could not execute chosen action.'));
