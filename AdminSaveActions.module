@@ -50,7 +50,8 @@ class AdminSaveActions extends WireData implements Module, ConfigurableModule {
 	 */
 	static public function getDefaultConfig() {
 		return array(
-			'configInputType' => 'radios'
+			'configInputType' => 'radios',
+			'siblingLimit'    => '100'
 		);
 	}
 
@@ -222,6 +223,16 @@ class AdminSaveActions extends WireData implements Module, ConfigurableModule {
 					if($this->adminSaveAction == 'new') $this->adminSaveAction = 'edit';
 				} else {
 					$actions['new'] = $this->_('Create a new sibling page');
+
+					// check there aren't too many siblings to avoid slowing things down
+					$editedPage = $this->pages->get($this->input->get->id);
+					if($this->pages->count("parent=$editedPage->parent") <= $this->siblingLimit) {
+						$nextPage = $editedPage->next();
+						// show option only if next page has been found
+						if($nextPage->id) {
+							$actions['next-' . $nextPage->id] = $this->_('Edit next sibling page');
+						}
+					}
 				}
 				$actions['view'] = $this->_('View page');
 				break;
@@ -300,6 +311,10 @@ class AdminSaveActions extends WireData implements Module, ConfigurableModule {
 
 			// saved target: page, field or template
 			$savedTarget = $this->pages->get($id);
+
+			// extract next page id if one present
+			list($action, $nextId) = explode('-', $action);
+
 			switch($action) {
 				case 'list':
 					// go to the page list, opened to show the edited page
@@ -321,6 +336,11 @@ class AdminSaveActions extends WireData implements Module, ConfigurableModule {
 					// a message to the user though
 					$this->message($this->_('This page is not viewable - could not execute chosen action.'));
 				case 'edit':
+				case 'next':
+					// change the id if nextId was given ("edit next sibling page")
+					// ...and continue like it was plain old edit
+					if($nextId) $id = $nextId;
+
 					// this is the default (and original) behaviour, stay in the editor
 					// ProcessPage(Edit|Add) needs the slash while Process(Template|Field) can't stand it
 					if($this->currentProcess['type'] == 'page') $url = $base . "edit/?id={$id}";
@@ -365,6 +385,13 @@ class AdminSaveActions extends WireData implements Module, ConfigurableModule {
 
 		$f->value = $data['configInputType'];
 
+		$wrapper->add($f);
+
+		$f = new InputfieldText();
+		$f->attr('id+name', 'siblingLimit');
+		$f->label = __('Sibling limit', __FILE__);
+		$f->description = __('Set a reasonable sibling count upper limit for giving "edit next sibling" choice.', __FILE__);
+		$f->value = $data['siblingLimit'];
 		$wrapper->add($f);
 
 		return $wrapper;
