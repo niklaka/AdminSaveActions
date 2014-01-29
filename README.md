@@ -25,6 +25,7 @@ Chosen action can be saved in a cookie for current user by checking "Remember th
 
 ### Config option(s) ###
 * Input type: display actions in a container with radio buttons OR a drop down near the bottom Save button.
+* Sibling limit: upper limit for sibling count to still give option to "edit next sibling page".
 
 ------
 AdminSaveActions Copyright (c) 2013-2014 Niklas Lakanen
