@@ -37,7 +37,7 @@ class AdminSaveActions extends WireData implements Module, ConfigurableModule {
 		return array(
 			'title'    => 'Admin Save Actions',
 			'summary'  => 'Lets the user choose from alternatives what happens after a page/field/template add/save.',
-			'version'  => 100,
+			'version'  => 101,
 			'author'   => 'Niklas Lakanen',
 			'singular' => true,
 			'autoload' => true
@@ -230,11 +230,25 @@ class AdminSaveActions extends WireData implements Module, ConfigurableModule {
 
 					// check there aren't too many siblings to avoid slowing things down
 					$editedPage = $this->pages->get($this->input->get->id);
-					if($this->pages->count("parent=$editedPage->parent") <= $this->siblingLimit) {
-						$nextPage = $editedPage->next();
+					// by default next() skips hidden and unpublished pages
+					// if edited page is unpublished, include all pages when finding next sibling as well
+					// if it's only hidden, include hidden but not unpublished pages
+					$includeSelector = '';
+					if($editedPage->status & Page::statusUnpublished) $includeSelector = ', include=all';
+					else if($editedPage->status & Page::statusHidden) $includeSelector = ', include=hidden';
+					if($this->pages->count("parent=$editedPage->parent $includeSelector") <= $this->siblingLimit) {
+						// a separate siblings() call is required to match hidden/unpublished pages too
+						$nextPage = $editedPage->next($editedPage->siblings($includeSelector));
 						// show option only if next page has been found
 						if($nextPage->id) {
-							$actions['next-' . $nextPage->id] = $this->_('Edit next sibling page');
+							$actionId = 'next-' . $nextPage->id;
+							$actions[$actionId] = $this->_('Edit next sibling page');
+							// modify default action to match value with id if 'next' was the default
+							if($this->adminSaveAction == 'next') $this->adminSaveAction = $actionId;
+						} else if($this->adminSaveAction == 'next') {
+							// 'next' is not an option
+							// 'list' matches better than the default 'edit' would
+							$this->adminSaveAction = 'list';
 						}
 					}
 				}
