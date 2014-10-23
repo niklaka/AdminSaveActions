@@ -129,8 +129,8 @@ class AdminSaveActions extends WireData implements Module, ConfigurableModule {
 		// don't do a thing if template has just been changed
 		if($this->page->process == 'ProcessPageEdit' && $this->input->get->template) return;
 		
-		// don't do a thing if we're editing a field from inside a template
-		if($this->input->get->process_template && $this->input->get->modal) return;
+		// don't do a thing if we're in a modal
+		if($this->input->get->modal) return;
 
 		// we're about to really do something so let's initialize some more
 
